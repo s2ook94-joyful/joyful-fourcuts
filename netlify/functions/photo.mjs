@@ -1,6 +1,7 @@
 import { getStore } from '@netlify/blobs';
 const storeName='joyful-fourcuts-photos';
 export default async (request)=>{
+  try {
   const store=getStore(storeName);
   if(request.method==='POST'){
     if(request.headers.get('content-type')!=='image/png')return new Response('PNG only',{status:415});
@@ -19,4 +20,8 @@ export default async (request)=>{
     return new Response(data,{headers:{'Content-Type':'image/png','Content-Disposition':'attachment; filename="joyful-fourcuts.png"','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}})
   }
   return new Response('Method not allowed',{status:405});
+  } catch(error) {
+    console.error('photo function failed:', error);
+    return Response.json({error:'PHOTO_STORE_ERROR',message:String(error?.message||error)},{status:500});
+  }
 };
