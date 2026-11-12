@@ -4,7 +4,7 @@ export default async (request)=>{
   try {
   const store=getStore(storeName);
   if(request.method==='POST'){
-    if(request.headers.get('content-type')!=='image/png')return new Response('PNG only',{status:415});
+    if(!request.headers.get('content-type')?.startsWith('image/jpeg'))return new Response('JPEG only',{status:415});
     const bytes=await request.arrayBuffer();
     if(bytes.byteLength>15*1024*1024)return new Response('Photo too large',{status:413});
     const id=crypto.randomUUID();
@@ -17,7 +17,7 @@ export default async (request)=>{
     const {data,metadata}=await store.getWithMetadata(id,{type:'arrayBuffer'});
     if(!data)return new Response('Not found',{status:404});
     if(!metadata?.created||Date.now()-Number(metadata.created)>24*60*60*1000){await store.delete(id);return new Response('Expired',{status:410})}
-    return new Response(data,{headers:{'Content-Type':'image/png','Content-Disposition':'attachment; filename="joyful-fourcuts.png"','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}})
+    return new Response(data,{headers:{'Content-Type':'image/jpeg','Content-Disposition':'attachment; filename="joyful-fourcuts.jpg"','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}})
   }
   return new Response('Method not allowed',{status:405});
   } catch(error) {
