@@ -1,0 +1,22 @@
+import { getStore } from '@netlify/blobs';
+const storeName='joyful-fourcuts-photos';
+export default async (request)=>{
+  const store=getStore(storeName);
+  if(request.method==='POST'){
+    if(request.headers.get('content-type')!=='image/png')return new Response('PNG only',{status:415});
+    const bytes=await request.arrayBuffer();
+    if(bytes.byteLength>15*1024*1024)return new Response('Photo too large',{status:413});
+    const id=crypto.randomUUID();
+    await store.set(id,bytes,{metadata:{created:Date.now()}});
+    return Response.json({url:`/.netlify/functions/photo?id=${encodeURIComponent(id)}`});
+  }
+  if(request.method==='GET'){
+    const id=new URL(request.url).searchParams.get('id');
+    if(!id||!/^[a-f0-9-]{36}$/.test(id))return new Response('Not found',{status:404});
+    const {data,metadata}=await store.getWithMetadata(id,{type:'arrayBuffer'});
+    if(!data)return new Response('Not found',{status:404});
+    if(!metadata?.created||Date.now()-Number(metadata.created)>24*60*60*1000){await store.delete(id);return new Response('Expired',{status:410})}
+    return new Response(data,{headers:{'Content-Type':'image/png','Content-Disposition':'attachment; filename="joyful-fourcuts.png"','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}})
+  }
+  return new Response('Method not allowed',{status:405});
+};
